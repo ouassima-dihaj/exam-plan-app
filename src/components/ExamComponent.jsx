@@ -1,53 +1,117 @@
 import React, { useState, useEffect } from "react";
 import { saveExam } from "../services/ExamService";
 import { getSemestres } from "../services/SemestreService";
+import { getSalles } from "../services/SalleService";
+import { getGroupes } from "../services/GroupeService";
 
 function ExamComponent() {
   const [idSemestre, setIdSemestre] = useState(null);
   const [semestres, setSemestres] = useState([]);
+  const [idSession, setIdSession] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [type, setType] = useState("");
+  const [idCoordonnateur, setIdCoordonnateur] = useState(null);
+  const [coordonnateurs, setCoordonnateurs] = useState([]);
+  const [idelementPedagogique, setIdElementPedagogique] = useState(null);
+  const [elementPedagogiques, setElementPedagogiques] = useState([]);
+  const [idSalle, setIdSalle] = useState(null);
+  const [salles, setSalles] = useState([]);
+  const [idGroupe, setIdGroupe] = useState(null);
+  const [groupes, setGroupes] = useState([]);
+  const [selectedSalles, setSelectedSalles] = useState([]);
   const [date, setDate] = useState(null);
   const [heureDebut, setHeureDebut] = useState(null);
   const [dureePrevue, setDureePrevue] = useState(null);
   const [dureeRelle, setDureeRelle] = useState(null);
   const [rapportTextuelle, setRapportTextuelle] = useState(null);
-  const [error, setError] = useState(null); // State to capture and display errors
+  const [error, setError] = useState(null);
+  const [epreuve, setEpreuve] = useState(null);
+  const [pv, setPv] = useState(null);
+  const [surveillantCount, setSurveillantCount] = useState(null);
+
+  const handleSalleChange = (salleId, salleName, surveillantCount) => {
+    setSelectedSalles((prevSelectedSalles) => {
+      const index = prevSelectedSalles.findIndex(
+        (salle) => salle.idSalle === salleId
+      );
+      if (index === -1) {
+        return [
+          ...prevSelectedSalles,
+          {
+            idSalle: salleId,
+            nom: salleName,
+            surveillantCount: surveillantCount,
+          },
+        ];
+      } else {
+        const updatedSalles = [...prevSelectedSalles]; //copie object
+        updatedSalles[index].nom = salleName;
+        updatedSalles[index].surveillantCount = surveillantCount;
+        return updatedSalles;
+      }
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const examData = {
-      idSemestre: idSemestre,
-      date,
-      heureDebut,
-      dureePrevue,
-      dureeRelle,
-      rapportTextuelle,
-    };
+    const formData = new FormData();
+    formData.append("idSemestre", idSemestre);
+    formData.append("date", date);
+    formData.append("heureDebut", heureDebut);
+    formData.append("dureePrevue", dureePrevue);
+    formData.append("dureeRelle", dureeRelle);
+    formData.append("rapportTextuelle", rapportTextuelle);
+    formData.append("epreuve", epreuve);
+    formData.append("pv", pv);
+    formData.append("salles", JSON.stringify(selectedSalles));
+    formData.append("idGroupe", idGroupe);
+    // for debugging
+    for (let pair of formData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
 
-    console.log("Submitting exam data:", examData);
-
-    saveExam(examData)
+    saveExam(formData)
       .then((response) => {
         console.log("Form data sent successfully:", response.data);
-        // Reset form fields or handle success action
       })
       .catch((error) => {
         console.error("Error submitting form data:", error);
-        setError("Failed to save exam. Please check your input and try again."); // Set error message for display
+        setError("Failed to save exam. Please check your input and try again.");
       });
   };
 
   useEffect(() => {
-    // Fetch semestres data from API when component mounts
     getSemestres()
       .then((response) => {
         setSemestres(response.data);
       })
       .catch((error) => {
         console.error("Error fetching semestres:", error);
-        setError("Failed to fetch semestres. Please try again later."); // Set error message for display
+        setError("Failed to fetch semestres. Please try again later.");
       });
   }, []);
 
+  useEffect(() => {
+    getSalles()
+      .then((response) => {
+        setSalles(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching salles:", error);
+        setError("Failed to fetch salles. Please try again later.");
+      });
+  }, []);
+
+  useEffect(() => {
+    getGroupes()
+      .then((response) => {
+        setGroupes(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching salles:", error);
+        setError("Failed to fetch salles. Please try again later.");
+      });
+  }, []);
   return (
     <div>
       <form onSubmit={handleSubmit} encType="multipart/form-data">
@@ -66,7 +130,6 @@ function ExamComponent() {
         </select>
         <br />
         <br />
-
         <label htmlFor="date">Date:</label>
         <input
           type="date"
@@ -77,7 +140,6 @@ function ExamComponent() {
         />
         <br />
         <br />
-
         <label htmlFor="heure_debut">Heure de début:</label>
         <input
           type="time"
@@ -88,7 +150,6 @@ function ExamComponent() {
         />
         <br />
         <br />
-
         <label htmlFor="duree_prevue">Durée prévue (en minutes):</label>
         <input
           type="number"
@@ -99,7 +160,6 @@ function ExamComponent() {
         />
         <br />
         <br />
-
         <label htmlFor="duree_reelle">Durée réelle (en minutes):</label>
         <input
           type="number"
@@ -110,7 +170,6 @@ function ExamComponent() {
         />
         <br />
         <br />
-
         <label htmlFor="rapport">Rapport textuel:</label>
         <br />
         <textarea
@@ -123,9 +182,82 @@ function ExamComponent() {
         />
         <br />
         <br />
-
+        <label htmlFor="salles">Salles</label>
+        <br />
+        {salles.map((item) => (
+          <div key={item.idSalle}>
+            <input
+              type="checkbox"
+              id={`salle_${item.idSalle}`}
+              name="salles[]"
+              value={item.idSalle}
+              onChange={(e) =>
+                handleSalleChange(
+                  item.idSalle,
+                  item.nom,
+                  document.getElementById(`salle_${item.idSalle}_invigilators`)
+                    .value
+                )
+              }
+            />
+            <label htmlFor={`salle_${item.idSalle}`}>{item.nom}</label>
+            <input
+              type="number"
+              id={`salle_${item.idSalle}_invigilators`}
+              name={`salle_${item.idSalle}_invigilators`}
+              defaultValue="2"
+              min="1"
+            />
+          </div>
+        ))}
+        <br />
+        /** Groupes */
+        <label htmlFor="Groupes">Groupes</label>
+        <br />
+        {groupes.map((item) => (
+          <div key={item.idGroupe}>
+            {console.log(groupes)}
+            <input
+              type="checkbox"
+              id={`groupe_${item.idGroupe}`}
+              name="groupes[]"
+              value={item.idGroupe}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setIdGroupe(e.target.value);
+                } else {
+                  setIdGroupe(null); // Set idGroupe to null when checkbox is unchecked
+                }
+              }}
+            />
+            {console.log(idGroupe)}
+            <label htmlFor={`groupe_${item.idGroupe}`}>{item.nom}</label>
+          </div>
+        ))}
+        <br />
+        <label htmlFor="epreuve">Epreuve:</label>
+        <input
+          type="file"
+          id="epreuve"
+          name="epreuve"
+          onChange={(e) => {
+            setEpreuve(e.target.files[0]);
+          }}
+        />
+        <br />
+        <br />
+        <label htmlFor="pv">PV:</label>
+        <input
+          type="file"
+          id="pv"
+          name="pv"
+          onChange={(e) => {
+            setPv(e.target.files[0]);
+          }}
+        />
+        <br />
+        <br />
         {error && <div className="error-message">{error}</div>}
-
         <button type="submit">Save</button>
       </form>
     </div>
@@ -133,4 +265,3 @@ function ExamComponent() {
 }
 
 export default ExamComponent;
- 
