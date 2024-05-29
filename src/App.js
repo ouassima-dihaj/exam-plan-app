@@ -1,9 +1,9 @@
 import React from "react";
-import ExamComponent from "./components/ExamComponent";
+import ExamDetailsComponent from "./components/ExamDetailsComponent";
 function App() {
   return (
     <div>
-      <ExamComponent />
+      <ExamDetailsComponent />
     </div>
   );
 }
