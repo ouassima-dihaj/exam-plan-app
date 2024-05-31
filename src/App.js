@@ -1,11 +1,12 @@
 import React from "react";
-import ExamDetailsComponent from "./components/ExamDetailsComponent";
+import ExamComponent from "./components/ExamComponent";
 function App() {
   return (
     <div>
-      <ExamDetailsComponent />
+      <ExamComponent />
     </div>
   );
 }
 
 export default App;
+   /**<ExamComponent />*/
