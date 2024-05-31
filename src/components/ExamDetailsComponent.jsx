@@ -4,11 +4,16 @@ import { getSallesByExam } from "../services/SalleService";
 import { getEnseignantByIdSalle } from "../services/EnseignantService";
 import { getAdminByIdSalle } from "../services/AdminService";
 
+import { getSalles } from "../services/SalleService";
+
 const ExamDetailsComponent = () => {
     const [exams, setExams] = useState([]);
     const [examSalles, setExamSalles] = useState({});
+
     const [surveillants, setSurveillants] = useState([]);
     const [admins, setAdmins] = useState([]);
+
+
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -18,12 +23,17 @@ const ExamDetailsComponent = () => {
                 setExams(response.data);
                 // For each exam, fetch its salles
                 response.data.forEach((exam) => {
+
                     getSallesByExam(exam.idExamen)
+
+                    getSalles(exam.idExamen)
+
                         .then((sallesResponse) => {
                             setExamSalles((prevExamSalles) => ({
                                 ...prevExamSalles,
                                 [exam.idExamen]: sallesResponse.data,
                             }));
+
                             // For each salle, fetch surveillants
                             sallesResponse.data.forEach((salle) => {
                             //fetch surveillants
@@ -51,6 +61,8 @@ const ExamDetailsComponent = () => {
                                     setError("Failed to fetch admins. Please try again later.");
                             });
                             });
+
+
                         })
                         .catch((error) => {
                             console.error("Error fetching salles for exam:", exam.idExamen, error);
@@ -78,6 +90,7 @@ const ExamDetailsComponent = () => {
                         examSalles[exam.idExamen].map((salle) => (
                             <div key={salle.idSalle}>
                                 <p>{salle.nom}</p>
+
                                 <h5>Surveillants:</h5>
                                 {surveillants[salle.idSalle] ? (
                                     surveillants[salle.idSalle].map((surveillant, index) => (
@@ -94,6 +107,8 @@ const ExamDetailsComponent = () => {
                                 ) : (
                                     <p>Loading admins...</p>
                                 )}
+
+
                             </div>
                         ))
                     ) : (
