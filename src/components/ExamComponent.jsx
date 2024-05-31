@@ -3,6 +3,7 @@ import { saveExam } from "../services/ExamService";
 import { getSemestres } from "../services/SemestreService";
 import { getSalles } from "../services/SalleService";
 import { getGroupes } from "../services/GroupeService";
+import { getAdmins } from "../services/AdminService";
 
 function ExamComponent() {
   const [idSemestre, setIdSemestre] = useState(null);
@@ -28,8 +29,14 @@ function ExamComponent() {
   const [epreuve, setEpreuve] = useState(null);
   const [pv, setPv] = useState(null);
   const [surveillantCount, setSurveillantCount] = useState(null);
+  const [admins, setAdmins] = useState([]);
 
-  const handleSalleChange = (salleId, salleName, surveillantCount) => {
+  const handleSalleChange = (salleId, salleName) => {
+    const surveillantCount = document.getElementById(
+      `salle_${salleId}_invigilators`
+    ).value;
+    // const idAdmin = document.getElementById(`admin_${salleId}`).value;
+
     setSelectedSalles((prevSelectedSalles) => {
       const index = prevSelectedSalles.findIndex(
         (salle) => salle.idSalle === salleId
@@ -41,14 +48,43 @@ function ExamComponent() {
             idSalle: salleId,
             nom: salleName,
             surveillantCount: surveillantCount,
+            // admin: { idPersonnel: idAdmin },
           },
         ];
       } else {
-        const updatedSalles = [...prevSelectedSalles]; //copie object
-        updatedSalles[index].nom = salleName;
+        const updatedSalles = [...prevSelectedSalles];
+        updatedSalles[index].surveillantCount = surveillantCount;
+        // updatedSalles[index].admin.idPersonnel = idAdmin;
+        return updatedSalles;
+      }
+    });
+  };
+
+  const handleSurveillantCountChange = (salleId, surveillantCount) => {
+    setSelectedSalles((prevSelectedSalles) => {
+      const index = prevSelectedSalles.findIndex(
+        (salle) => salle.idSalle === salleId
+      );
+      if (index !== -1) {
+        const updatedSalles = [...prevSelectedSalles];
         updatedSalles[index].surveillantCount = surveillantCount;
         return updatedSalles;
       }
+      return prevSelectedSalles;
+    });
+  };
+
+  const handleAdminChange = (salleId, idAdmin) => {
+    setSelectedSalles((prevSelectedSalles) => {
+      const index = prevSelectedSalles.findIndex(
+        (salle) => salle.idSalle === salleId
+      );
+      if (index !== -1) {
+        const updatedSalles = [...prevSelectedSalles];
+        updatedSalles[index].admin.idPersonnel = idAdmin;
+        return updatedSalles;
+      }
+      return prevSelectedSalles;
     });
   };
 
@@ -65,7 +101,7 @@ function ExamComponent() {
     formData.append("pv", pv);
     formData.append("salles", JSON.stringify(selectedSalles));
     formData.append("idGroupe", idGroupe);
-    // for debugging
+
     for (let pair of formData.entries()) {
       console.log(`${pair[0]}: ${pair[1]}`);
     }
@@ -108,10 +144,24 @@ function ExamComponent() {
         setGroupes(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching salles:", error);
-        setError("Failed to fetch salles. Please try again later.");
+        console.error("Error fetching groupes:", error);
+        setError("Failed to fetch groupes. Please try again later.");
       });
   }, []);
+
+  /*
+  useEffect(() => {
+    getAdmins()
+      .then((response) => {
+        setAdmins(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching admins:", error);
+        setError("Failed to fetch admins. Please try again later.");
+      });
+  }, []);
+ */
+
   return (
     <div>
       <form onSubmit={handleSubmit} encType="multipart/form-data">
@@ -191,14 +241,7 @@ function ExamComponent() {
               id={`salle_${item.idSalle}`}
               name="salles[]"
               value={item.idSalle}
-              onChange={(e) =>
-                handleSalleChange(
-                  item.idSalle,
-                  item.nom,
-                  document.getElementById(`salle_${item.idSalle}_invigilators`)
-                    .value
-                )
-              }
+              onChange={() => handleSalleChange(item.idSalle, item.nom)}
             />
             <label htmlFor={`salle_${item.idSalle}`}>{item.nom}</label>
             <input
@@ -207,16 +250,30 @@ function ExamComponent() {
               name={`salle_${item.idSalle}_invigilators`}
               defaultValue="2"
               min="1"
+              onChange={(e) =>
+                handleSurveillantCountChange(item.idSalle, e.target.value)
+              }
             />
+            {/*
+              <select
+          id={`admin_${item.idSalle}`}
+          onChange={(e) => handleAdminChange(item.idSalle, e.target.value)}
+        >
+          <option value="">Select Admin</option>
+          {admins.map((admin) => (
+            <option key={admin.idPersonnel} value={admin.idPersonnel}>
+              {admin.nom}
+            </option>
+          ))}
+        </select>
+           */}
           </div>
         ))}
         <br />
-        /** Groupes */
         <label htmlFor="Groupes">Groupes</label>
         <br />
         {groupes.map((item) => (
           <div key={item.idGroupe}>
-            {console.log(groupes)}
             <input
               type="checkbox"
               id={`groupe_${item.idGroupe}`}
@@ -230,7 +287,6 @@ function ExamComponent() {
                 }
               }}
             />
-            {console.log(idGroupe)}
             <label htmlFor={`groupe_${item.idGroupe}`}>{item.nom}</label>
           </div>
         ))}
