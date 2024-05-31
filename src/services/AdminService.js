@@ -21,4 +21,4 @@ export const getSalleName = (id) => {
     return axios.get(`http://localhost:8080/api/salles/${id}`);
 };
 
-export const getAdmins = () => axios.get(REST_API_BASE_URL+"/nullSalle");
+
